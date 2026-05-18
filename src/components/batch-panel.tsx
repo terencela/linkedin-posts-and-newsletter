@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Layers } from "lucide-react";
+import { Layers } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FieldLabel, Input, TextArea } from "@/components/ui/field";
 
 export function BatchPanel({ onDone }: { onDone?: () => void }) {
   const [topics, setTopics] = useState("");
@@ -9,11 +11,18 @@ export function BatchPanel({ onDone }: { onDone?: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+
+  const lines = topics.split("\n").filter((l) => l.trim());
+  const lineCount = lines.length;
+  const maxTopics = 30;
 
   async function handleBatch() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setProgress(0);
+
     try {
       const res = await fetch("/api/batch", {
         method: "POST",
@@ -22,6 +31,7 @@ export function BatchPanel({ onDone }: { onDone?: () => void }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Batch failed");
+      setProgress(100);
       setResult(`Created ${data.count} drafts in queue.`);
       setTopics("");
       onDone?.();
@@ -32,39 +42,97 @@ export function BatchPanel({ onDone }: { onDone?: () => void }) {
     }
   }
 
-  const lineCount = topics.split("\n").filter((l) => l.trim()).length;
-
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
-      <p className="text-sm text-zinc-400">
-        One topic per line. Max 30. Each line becomes a draft in your queue.
-        This calls the API once per topic — can take a few minutes.
-      </p>
-      <textarea
+    <div className="mx-auto max-w-2xl space-y-6">
+      <header>
+        <h2 className="text-base font-semibold tracking-tight text-paper">
+          Batch generate
+        </h2>
+        <p className="mt-1 text-sm leading-relaxed text-paper-muted">
+          One topic per line. Max {maxTopics}. Each line becomes a draft. One
+          API call per topic, so expect a few minutes for large batches.
+        </p>
+      </header>
+
+      <div className="flex items-baseline justify-between gap-4 border-b border-line pb-3">
+        <span className="font-mono text-[11px] uppercase tracking-widest text-paper-muted">
+          Topics
+        </span>
+        <span
+          className={cnCount(
+            lineCount,
+            maxTopics,
+          )}
+        >
+          {lineCount}
+          <span className="text-paper-muted"> / {maxTopics}</span>
+        </span>
+      </div>
+
+      <TextArea
         value={topics}
         onChange={(e) => setTopics(e.target.value)}
         rows={14}
-        placeholder={"Shadow AI at Swiss enterprises\nWhy procurement kills AI adoption\nWhat I shipped this week at ZRH\n..."}
-        className="w-full resize-y rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-600 focus:outline-none"
+        placeholder={
+          "Shadow AI at Swiss enterprises\nWhy procurement kills AI adoption\nWhat I shipped this week at ZRH"
+        }
+        aria-describedby="batch-topic-hint"
       />
-      <p className="text-xs text-zinc-500">{lineCount} topic{lineCount !== 1 ? "s" : ""}</p>
-      <input
-        value={angle}
-        onChange={(e) => setAngle(e.target.value)}
-        placeholder="Shared angle for all (optional)"
-        className="h-11 w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-600 focus:outline-none"
-      />
-      <button
-        type="button"
+      <p id="batch-topic-hint" className="sr-only">
+        Enter one topic per line, up to {maxTopics} topics
+      </p>
+
+      <div>
+        <FieldLabel htmlFor="batch-angle">Shared angle (optional)</FieldLabel>
+        <Input
+          id="batch-angle"
+          value={angle}
+          onChange={(e) => setAngle(e.target.value)}
+          placeholder="Same take across all topics"
+        />
+      </div>
+
+      {loading ? (
+        <div className="space-y-2" aria-live="polite">
+          <div className="h-1 overflow-hidden rounded-full bg-line">
+            <div
+              className="h-full bg-signal transition-all duration-500"
+              style={{ width: `${progress || 12}%` }}
+            />
+          </div>
+          <p className="font-mono text-[11px] uppercase tracking-widest text-paper-muted">
+            Generating {lineCount} post{lineCount !== 1 ? "s" : ""}...
+          </p>
+        </div>
+      ) : null}
+
+      <Button
         onClick={handleBatch}
-        disabled={loading || lineCount === 0 || lineCount > 30}
-        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-zinc-100 text-sm font-medium text-zinc-900 disabled:opacity-40"
+        disabled={loading || lineCount === 0 || lineCount > maxTopics}
+        loading={loading}
+        className="w-full"
       >
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Layers className="h-4 w-4" />}
-        {loading ? `Generating ${lineCount} posts...` : `Generate ${lineCount || ""} posts`}
-      </button>
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      {result && <p className="text-sm text-emerald-400">{result}</p>}
+        <Layers className="h-4 w-4" aria-hidden />
+        {loading
+          ? `Generating ${lineCount} posts...`
+          : `Generate ${lineCount || 0} posts`}
+      </Button>
+
+      {error ? (
+        <p className="text-sm text-danger" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {result ? (
+        <p className="border-l-2 border-ready bg-ready-dim py-2 pl-3 text-sm text-ready">
+          {result}
+        </p>
+      ) : null}
     </div>
   );
+}
+
+function cnCount(count: number, max: number) {
+  const over = count > max;
+  return `font-mono text-2xl tabular-nums tracking-tight ${over ? "text-danger" : "text-paper"}`;
 }

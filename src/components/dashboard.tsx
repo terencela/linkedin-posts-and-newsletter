@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ExternalLink, PenLine, Layers, ListOrdered } from "lucide-react";
 import { ComposePanel } from "./compose-panel";
 import { QueuePanel } from "./queue-panel";
 import { BatchPanel } from "./batch-panel";
@@ -8,10 +9,14 @@ import { cn } from "@/lib/utils";
 
 type Tab = "compose" | "queue" | "batch";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "compose", label: "Compose" },
-  { id: "queue", label: "Queue" },
-  { id: "batch", label: "Batch" },
+const TABS: {
+  id: Tab;
+  label: string;
+  icon: typeof PenLine;
+}[] = [
+  { id: "compose", label: "Compose", icon: PenLine },
+  { id: "queue", label: "Queue", icon: ListOrdered },
+  { id: "batch", label: "Batch", icon: Layers },
 ];
 
 export function Dashboard() {
@@ -23,44 +28,66 @@ export function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <header className="border-b border-zinc-800 px-4 py-4 sm:px-6">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="relative min-h-[100dvh] bg-ink text-paper">
+      <div className="grain" aria-hidden />
+
+      <header className="relative z-10 border-b border-line">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="text-lg font-semibold tracking-tight">Postcraft</h1>
-            <p className="text-xs text-zinc-500">
-              Voice: ~/.ai-os · Copy to{" "}
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-paper-muted">
+              Terence La
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-paper sm:text-3xl">
+              Postcraft
+            </h1>
+            <p className="mt-1.5 text-sm text-paper-muted">
+              Voice from ~/.ai-os ·{" "}
               <a
                 href="https://www.linkedin.com/in/terencela"
                 target="_blank"
                 rel="noreferrer"
-                className="underline hover:text-zinc-300"
+                className="inline-flex items-center gap-1 text-paper underline decoration-line underline-offset-4 transition hover:decoration-signal"
               >
                 LinkedIn
+                <ExternalLink className="h-3 w-3" aria-hidden />
               </a>
             </p>
           </div>
-          <nav className="flex gap-1 rounded-lg border border-zinc-800 p-1">
+
+          <nav
+            className="hidden gap-0 border border-line sm:flex"
+            aria-label="Main sections"
+          >
             {TABS.map((t) => (
-              <button
+              <TabButton
                 key={t.id}
-                type="button"
+                active={tab === t.id}
                 onClick={() => setTab(t.id)}
-                className={cn(
-                  "h-10 rounded-md px-4 text-sm font-medium transition",
-                  tab === t.id
-                    ? "bg-zinc-100 text-zinc-900"
-                    : "text-zinc-400 hover:text-zinc-200",
-                )}
-              >
-                {t.label}
-              </button>
+                label={t.label}
+                icon={t.icon}
+              />
             ))}
           </nav>
         </div>
+
+        <nav
+          className="fixed bottom-0 left-0 right-0 z-20 grid grid-cols-3 border-t border-line bg-ink/95 backdrop-blur-sm sm:hidden"
+          aria-label="Main sections"
+        >
+          {TABS.map((t) => (
+            <TabButton
+              key={t.id}
+              active={tab === t.id}
+              onClick={() => setTab(t.id)}
+              label={t.label}
+              icon={t.icon}
+              mobile
+            />
+          ))}
+        </nav>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+      <main className="relative z-10 mx-auto max-w-6xl px-4 py-6 pb-24 sm:px-6 sm:pb-8">
         {tab === "compose" && <ComposePanel onSaved={() => bumpQueue()} />}
         {tab === "queue" && <QueuePanel refreshKey={refreshKey} />}
         {tab === "batch" && (
@@ -73,5 +100,38 @@ export function Dashboard() {
         )}
       </main>
     </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  label,
+  icon: Icon,
+  mobile,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  icon: typeof PenLine;
+  mobile?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex flex-col items-center justify-center gap-1 font-mono text-[11px] uppercase tracking-widest transition-colors focus-ring",
+        mobile ? "h-14 px-2" : "h-11 min-w-[6.5rem] flex-row gap-2 px-4",
+        active
+          ? "bg-surface-raised text-paper"
+          : "text-paper-muted hover:bg-surface hover:text-paper",
+        !mobile && active && "border-b-2 border-b-signal",
+      )}
+      aria-current={active ? "page" : undefined}
+    >
+      <Icon className="h-4 w-4 shrink-0" aria-hidden />
+      {label}
+    </button>
   );
 }

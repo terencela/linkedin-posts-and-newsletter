@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { CopyButton } from "./copy-button";
 import { LintBadges } from "./lint-badges";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { FieldLabel, Input, TextArea } from "@/components/ui/field";
+import { LinkedInPreview } from "@/components/ui/linkedin-preview";
 
 export function ComposePanel({ onSaved }: { onSaved?: () => void }) {
   const [notes, setNotes] = useState("");
@@ -64,87 +66,107 @@ export function ComposePanel({ onSaved }: { onSaved?: () => void }) {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <section className="space-y-4">
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+      <section className="space-y-5">
+        <header>
+          <h2 className="text-base font-semibold tracking-tight text-paper">
+            Input
+          </h2>
+          <p className="mt-1 text-sm text-paper-muted">
+            Rough notes in. Voice rules from ~/.ai-os apply on generate.
+          </p>
+        </header>
+
         <div>
-          <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-zinc-500">
+          <FieldLabel htmlFor="notes" hint="Bullets, voice memos, half-formed takes">
             Rough notes
-          </label>
-          <textarea
+          </FieldLabel>
+          <TextArea
+            id="notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            rows={10}
+            rows={9}
             placeholder="Paste voice notes, bullets, half-formed thoughts..."
-            className="w-full resize-y rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-600 focus:outline-none"
           />
         </div>
+
         <div>
-          <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-zinc-500">
-            Angle (optional)
-          </label>
-          <input
+          <FieldLabel htmlFor="angle">Angle (optional)</FieldLabel>
+          <Input
+            id="angle"
             value={angle}
             onChange={(e) => setAngle(e.target.value)}
             placeholder="The take you want to land"
-            className="h-11 w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-600 focus:outline-none"
           />
         </div>
+
         <div>
-          <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-zinc-500">
-            Fixed lines (optional)
-          </label>
-          <textarea
+          <FieldLabel htmlFor="fixed">Fixed lines (optional)</FieldLabel>
+          <TextArea
+            id="fixed"
             value={fixedLines}
             onChange={(e) => setFixedLines(e.target.value)}
             rows={3}
-            className="w-full resize-y rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-600 focus:outline-none"
+            placeholder="Lines that must appear verbatim"
           />
         </div>
-        <button
-          type="button"
+
+        <Button
           onClick={handleGenerate}
-          disabled={loading || !notes.trim()}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-zinc-100 text-sm font-medium text-zinc-900 disabled:opacity-40"
+          disabled={!notes.trim()}
+          loading={loading}
+          className="w-full"
         >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          <Sparkles className="h-4 w-4" aria-hidden />
           {loading ? "Generating..." : "Generate post"}
-        </button>
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        </Button>
+
+        {error ? (
+          <p className="text-sm text-danger" role="alert">
+            {error}
+          </p>
+        ) : null}
       </section>
 
       <section className="space-y-4">
-        <label className="block text-xs font-medium uppercase tracking-wide text-zinc-500">
-          Output
-        </label>
-        <textarea
-          value={body}
-          onChange={(e) => {
-            setBody(e.target.value);
+        <header>
+          <h2 className="text-base font-semibold tracking-tight text-paper">
+            Output
+          </h2>
+          <p className="mt-1 text-sm text-paper-muted">
+            Edit, lint, copy, or queue.
+          </p>
+        </header>
+
+        <LinkedInPreview
+          body={body}
+          onChange={(value) => {
+            setBody(value);
             setLintWarnings([]);
           }}
-          rows={16}
-          placeholder="Generated post appears here. Edit freely."
-          className="w-full resize-y rounded-md border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-sm leading-relaxed text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-600 focus:outline-none"
         />
+
         <LintBadges warnings={lintWarnings} />
-        <div className="flex flex-wrap gap-2">
-          <CopyButton text={body} className={cn(!body.trim() && "pointer-events-none opacity-40")} />
-          <button
-            type="button"
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <CopyButton text={body} fullWidth />
+          <Button
+            variant="secondary"
             onClick={() => handleSave("draft")}
             disabled={saving || !body.trim()}
-            className="h-11 rounded-md border border-zinc-700 px-4 text-sm text-zinc-300 disabled:opacity-40"
+            loading={saving}
+            className="w-full sm:w-auto"
           >
             Save draft
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="ready"
             onClick={() => handleSave("ready")}
             disabled={saving || !body.trim()}
-            className="h-11 rounded-md border border-emerald-800/50 bg-emerald-950/40 px-4 text-sm text-emerald-300 disabled:opacity-40"
+            className="w-full sm:w-auto"
           >
             Mark ready
-          </button>
+          </Button>
         </div>
       </section>
     </div>

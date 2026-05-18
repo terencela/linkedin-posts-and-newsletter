@@ -4,14 +4,21 @@ import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { toLinkedInText } from "@/lib/linkedin";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface CopyButtonProps {
   text: string;
   className?: string;
   label?: string;
+  fullWidth?: boolean;
 }
 
-export function CopyButton({ text, className, label = "Copy for LinkedIn" }: CopyButtonProps) {
+export function CopyButton({
+  text,
+  className,
+  label = "Copy for LinkedIn",
+  fullWidth,
+}: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -22,16 +29,15 @@ export function CopyButton({ text, className, label = "Copy for LinkedIn" }: Cop
   }
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="primary"
       onClick={handleCopy}
-      className={cn(
-        "inline-flex h-11 items-center justify-center gap-2 rounded-md bg-zinc-100 px-4 text-sm font-medium text-zinc-900 transition hover:bg-white",
-        className,
-      )}
+      disabled={!text.trim()}
+      className={cn(fullWidth && "w-full sm:w-auto", className)}
+      aria-label={copied ? "Copied to clipboard" : label}
     >
-      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+      {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
       {copied ? "Copied" : label}
-    </button>
+    </Button>
   );
 }
